@@ -1,0 +1,59 @@
+{{extends "./layouts/layout.jet"}}
+
+{{block css()}}
+
+{{end}}
+
+
+{{block cardTitle()}}
+Pending Services
+{{end}}
+
+
+{{block cardContent()}}
+<div class="row">
+    <div class="col">
+        <ol class="breadcrumb mt-1">
+            <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item active">Pending Services</li>
+        </ol>
+        <h4 class="mt-4">Pending Services</h4>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+
+        <table id="pending-detail-table" class="table table-condensed table-striped">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Service</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{if len(services) > 0}}
+                {{range services}}
+                    <tr id="status-detail-service-{{.ID}}">
+                        <td><a href="/admin/hosts/{{.HostID}}#pending-content">{{.HostName}}</a></td>
+                        <td>{{.Name}}</td>
+                        <td><span class="badge bg-secondary">{{.Status}}</span></td>
+                    </tr>
+                {{end}}
+            {{else}}
+                <tr id="no-services">
+                    <td colspan="3">No services</td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{end}}
+
+{{block js()}}
+
+{{end}}

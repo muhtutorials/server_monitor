@@ -1,0 +1,233 @@
+<script src="/static/admin/js/pusher.min.js"></script>
+
+<script>
+    let pusher = new Pusher("{{.Preferences["pusherKey"]}}", {
+        cluster: "eu",
+        enabledTransports: ["ws", "wss"],
+        forceTLS: true,
+        channelAuthorization: {
+            endpoint: '/pusher/auth',
+        }
+    });
+
+    const publicChannel = pusher.subscribe("public-channel");
+    publicChannel.bind("app-starting", function(data) {
+        successAlert(data.message);
+
+        const toggle = document.getElementById("monitoring_live");
+        toggle.checked = true;
+    });
+
+    publicChannel.bind("app-stopping", function(data) {
+        warningAlert(data.message);
+
+        const toggle = document.getElementById("monitoring_live");
+        toggle.checked = false;
+
+        const scheduleTable = document.getElementById("schedule-table")
+        if (scheduleTable) {
+            scheduleTable.tBodies[0].innerHTML = ""
+
+            let newRow = scheduleTable.tBodies[0].insertRow(-1);
+            let newCell = newRow.insertCell(0);
+            newCell.setAttribute("colspan", "5");
+            newCell.setAttribute("class", "text-center");
+            newCell.innerHTML = "No scheduled checks";
+        }
+    });
+
+    publicChannel.bind("schedule-changed", function(data) {
+        const scheduleTable = document.getElementById("schedule-table")
+        if (scheduleTable) {
+            const tableContent = scheduleTable.innerHTML;
+            if (tableContent.includes("No scheduled checks")) {
+                const rowCount = scheduleTable.rows.length;
+                for (let i = rowCount - 1; i > 0; i--) {
+                    scheduleTable.deleteRow(i);
+                }
+            }
+
+            const row = document.getElementById("task-" + data.serviceID);
+            if (row) row.remove();
+
+            const newRow = scheduleTable.tBodies[0].insertRow();
+            newRow.setAttribute("id", "task-" + data.serviceID);
+
+            let newCell = newRow.insertCell(0);
+            let newText = document.createTextNode(data.hostName);
+            newCell.appendChild(newText);
+
+            newCell = newRow.insertCell(1);
+            newText = document.createTextNode(data.serviceName);
+            newCell.appendChild(newText);
+
+            newCell = newRow.insertCell(2);
+            newText = document.createTextNode(data.schedule);
+            newCell.appendChild(newText);
+
+            newCell = newRow.insertCell(3);
+            newText = document.createTextNode(data.lastRun);
+            newCell.appendChild(newText);
+
+            newCell = newRow.insertCell(4);
+            newText = document.createTextNode(data.nextRun);
+            newCell.appendChild(newText);
+        }
+    });
+
+    publicChannel.bind("schedule-task-removed", function(data) {
+        const row = document.getElementById("task-" + data.serviceID);
+        if (row) {
+            row.remove();
+
+            const scheduleTable = document.getElementById("schedule-table")
+            if (scheduleTable.rows.length === 1) {
+                let newRow = scheduleTable.tBodies[0].insertRow(-1);
+                let newCell = newRow.insertCell(0);
+                newCell.setAttribute("colspan", "5");
+                newCell.setAttribute("class", "text-center");
+                newCell.innerHTML = "No scheduled checks";
+            }
+        }
+    });
+
+    publicChannel.bind("service-status-changed", function(data) {
+        attention.toast({
+            msg: data.message,
+            icon: 'info',
+            timer: 30000,
+            showCloseButton: true
+        });
+
+        const row = document.getElementById("service-" + data.serviceID);
+        if (row) row.remove();
+
+        const table = document.getElementById(data.status + "-table");
+        if (table) {
+            const newRow = table.tBodies[0].insertRow();
+            newRow.setAttribute("id", "service-" + data.serviceID);
+
+            let newCell = newRow.insertCell(0);
+            newCell.innerHTML = `
+                <span class="${data.icon}"></span>
+                    ${data.serviceName}
+                <span class="badge bg-secondary" style="cursor:pointer;" onclick="checkNow(${data.serviceID}, '${data.status}')">
+                    Check Now
+                </span>
+            `;
+
+            newCell = newRow.insertCell(1);
+            if (data.status !== "pending") {
+                newCell.innerHTML = data.lastCheck
+            } else {
+                newCell.innerHTML = "Pending..."
+            }
+
+            newCell = newRow.insertCell(2);
+        }
+
+        const statusRow = document.getElementById("status-detail-service-" + data.serviceID);
+        if (statusRow) {
+            statusRow.remove();
+
+            const statuses = ["healthy", "warning", "problem", "pending"]
+            for (const status of statuses) {
+                const statusTable = document.getElementById(status + "-detail-table");
+                if (statusTable && statusTable?.rows.length === 1) {
+                    const newRow = statusTable.tBodies[0].insertRow();
+                    newRow.setAttribute("id", "no-services");
+
+                    let newCell = newRow.insertCell(0);
+                    newCell.setAttribute("colspan", "3");
+                    newCell.innerHTML = "No services";
+                }
+            }
+        }
+
+        const statusTable = document.getElementById(data.status + "-detail-table");
+        if (statusTable) {
+            const noServices = document.getElementById("no-services");
+            if (noServices) noServices.remove();
+
+            const newRow = statusTable.tBodies[0].insertRow();
+            newRow.setAttribute("id", "status-detail-service-" + data.serviceID);
+
+            let newCell = newRow.insertCell(0);
+            newCell.innerHTML = `
+                <a href="/admin/hosts/${data.hostID}#${data.status}-content">${data.hostName}</a>
+            `;
+
+            newCell = newRow.insertCell(1);
+            newCell.innerHTML = data.serviceName;
+
+            newCell = newRow.insertCell(2);
+            newCell.innerHTML = `<span class="badge bg-secondary">${data.status}</span>`;
+        }
+    });
+
+    publicChannel.bind("service-count-changed", function(data) {
+        if (document.getElementById("healthy-count")) {
+            document.getElementById("healthy-count").innerHTML = data.healthyCount;
+            document.getElementById("warning-count").innerHTML = data.warningCount;
+            document.getElementById("problem-count").innerHTML = data.problemCount;
+            document.getElementById("pending-count").innerHTML = data.pendingCount;
+        }
+    });
+
+    const privateChannel = pusher.subscribe("private-channel-{{.User.ID}}");
+    privateChannel.bind("private-message", function (data) {
+        attention.alert({
+            html: data.message,
+            icon: "success"
+        })
+    })
+
+    let attention = Prompt();
+
+    {{if .Flash != ""}}
+    successAlert('{{.Flash}}')
+    {{end}}
+
+    {{if .Warning != ""}}
+    warningAlert('{{.Warning}}')
+    {{end}}
+
+    {{if .Error != ""}}
+    errorAlert('{{.Error}}')
+    {{end}}
+
+    document.getElementById("monitoring_live").addEventListener("change", function () {
+        const enabled = document.getElementById("monitoring_live").checked;
+        if (!enabled) {
+            attention.confirm({
+                html: "This will stop monitoring of all hosts and services. Are you sure?",
+                callback: function (result) {
+                    if (result) {
+                        toggleMonitoring("monitoring_live", "0");
+                    } else {
+                        document.getElementById("monitoring_live").checked = true;
+                    }
+                }
+            })
+        } else {
+            toggleMonitoring("monitoring_live", "1");
+        }
+    });
+
+    function toggleMonitoring(name, value) {
+        const formData = new FormData();
+        formData.append("name", name);
+        formData.append("value", value);
+        formData.append("csrf_token", "{{.CSRFToken}}");
+
+        fetch("/admin/preferences", {
+            method: "Post",
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log("Toggled successfully!")
+            })
+            .catch(error => errorAlert(error))
+    }
+</script>

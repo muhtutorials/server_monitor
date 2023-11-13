@@ -1,0 +1,117 @@
+{{extends "./layouts/layout.jet"}}
+
+{{block css()}}
+<style>
+    .border-success, .border-warning, .border-danger, .border-secondary {
+        border: 1px solid;
+    }
+    .card-footer {
+        padding: 0.75rem 1.25rem;
+        background-color: rgba(0, 0, 0, 0.03);
+        border-top: 1px solid rgba(0, 0, 0, 0.125);
+    }
+</style>
+{{end}}
+
+
+{{block cardTitle()}}
+Overview
+{{end}}
+
+
+{{block cardContent()}}
+<div class="row">
+    <div class="col">
+        <ol class="breadcrumb mt-1">
+            <li class="breadcrumb-item active">Overview</li>
+        </ol>
+        <h4 class="mt-4">Services</h4>
+        <hr>
+    </div>
+</div>
+<div class="row">
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-success mb-4" style="border: 1px solid red;">
+            <div class="card-body text-success"><span id="healthy-count">{{healthy}}</span> Healthy service(s)</div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-success stretched-link" href="/admin/healthy">View Details</a>
+                <div class="small text-success"><i class="fas fa-angle-right"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-warning mb-4">
+            <div class="card-body text-warning"><span id="warning-count">{{warning}}</span> Warning service(s)</div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-warning stretched-link" href="/admin/warning">View Details</a>
+                <div class="small text-warning"><i class="fas fa-angle-right"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-danger mb-4">
+            <div class="card-body text-danger"><span id="problem-count">{{problem}}</span> Problem service(s)</div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-danger stretched-link" href="/admin/problem">View Details</a>
+                <div class="small text-danger"><i class="fas fa-angle-right"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-secondary mb-4">
+            <div class="card-body text-dark"><span id="pending-count">{{pending}}</span> Pending service(s)</div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-dark stretched-link" href="/admin/pending">View Details</a>
+                <div class="small text-dark"><i class="fas fa-angle-right"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <h3>Hosts</h3>
+
+        <table class="table table-condensed table-striped">
+            <thead>
+            <tr>
+                <th>Host</th>
+                <th>Services</th>
+                <th>Location</th>
+                <th>OS</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+                {{range hosts}}
+                <tr>
+                    <td><a href="/admin/hosts/{{.ID}}">{{.Name}}</a></td>
+                    <td>
+                        {{range .Services}}
+                            <span class="badge bg-info">{{.Name}}</span>
+                        {{end}}
+                    </td>
+                    <td>{{.Location}}</td>
+                    <td>{{.OS}}</td>
+                    <td>
+                        {{if .IsActive == 1}}
+                        <span class="badge bg-success">Active</span>
+                        {{else}}
+                        <span class="badge bg-danger">Inactive</span>
+                        {{end}}
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{end}}
+
+{{block js()}}
+
+{{end}}

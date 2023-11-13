@@ -1,0 +1,75 @@
+{{extends "./layouts/layout.jet"}}
+
+{{block css()}}
+
+{{end}}
+
+
+{{block cardTitle()}}
+Schedule
+{{end}}
+
+
+{{block cardContent()}}
+<div class="row">
+    <div class="col">
+        <ol class="breadcrumb mt-1">
+            <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item active">Schedule</li>
+        </ol>
+        <h4 class="mt-4">Schedule</h4>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+
+        <table id="schedule-table" class="table table-condensed table-striped">
+            <thead>
+            <tr>
+                <th>Host</th>
+                <th>Service</th>
+                <th>Schedule</th>
+                <th>Previous</th>
+                <th>Next</th>
+            </tr>
+            </thead>
+            <tbody id="schedule-table-body">
+                {{if len(tasks) > 0}}
+                    {{range tasks}}
+                        <tr id="task-{{.ServiceID}}">
+                            <td>{{.HostName}}</td>
+                            <td>{{.ServiceName}}</td>
+                            <td>{{.Schedule}}</td>
+                            <td>
+                                {{if dateAfterYearOne(.LastRun)}}
+                                    {{formatDate(.LastRun, "2006-01-02 15:04:05")}}
+                                {{else}}
+                                    Pending...
+                                {{end}}
+                            </td>
+                            <td>
+                                {{if dateAfterYearOne(.Entry.Next)}}
+                                    {{formatDate(.Entry.Next, "2006-01-02 15:04:05")}}
+                                {{else}}
+                                    Pending...
+                                {{end}}
+                            </td>
+                        </tr>
+                    {{end}}
+                {{else}}
+                    <tr>
+                        <td colspan="5" class="text-center">No scheduled checks</td>
+                    </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{end}}
+
+{{block js()}}
+
+{{end}}
